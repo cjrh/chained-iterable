@@ -1,0 +1,13 @@
+[flake8]
+ignore = C101,I002,WPS11
+per-file-ignores:
+  tests/*.py:D100,D103,D104,S101
+    # C101   - Coding magic comment not found
+    # I002   - no configuration found (.isort.cfg or [isort] in configs)
+    # D100   - Missing docstring in public module
+    # D103   - Missing docstring in public function
+    # D104   - Missing docstring in public package
+    # S101   - Use of assert detected
+    # WPS111 - Found too short name
+
+docstring-convention = google

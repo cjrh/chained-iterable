@@ -1,0 +1,1 @@
+"""The functional-itertools package."""
