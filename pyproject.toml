@@ -2,6 +2,9 @@
 requires = ["flit_core >=2,<3"]
 build-backend = "flit_core.buildapi"
 
+[tool.black]
+line-length = 80
+
 [tool.flit.metadata]
 module = "functional_itertools"
 author = "Bao Wei"

@@ -1,8 +1,10 @@
 [flake8]
-ignore = C101,I002,Q000,TYP101,WPS11,D,WPS
+ignore = C101,I002,Q000,TYP101,TYP102,WPS11,D,WPS
 per-file-ignores:
   functional_itertools/__init__.py:WPS410,WPS412
+  functional_itertools/functional_itertools.py:A003
   tests/*.py:D100,D103,D104,S101
+    # A003   - "..." is a python builtin
     # C101   - Coding magic comment not found
     # I002   - no configuration found (.isort.cfg or [isort] in configs)
     # D100   - Missing docstring in public module
@@ -11,10 +13,11 @@ per-file-ignores:
     # Q000   - Remove bad quotes
     # S101   - Use of assert detected
     # TYP101 - Missing type annotation for self in method
+    # TYP102 - Missing type annotation for cls in method
     # WPS111 - Found too short name
     # WPS410 - Found wrong metadata variable
     # WPS412 - Found `__init__.py` module with logic
 
     # temporary: D, WPS
-
+max-line-length = 88
 docstring-convention = google

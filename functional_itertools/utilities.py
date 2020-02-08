@@ -2,10 +2,19 @@ from enum import auto
 from enum import Enum
 from sys import version_info
 from typing import Any
+from typing import Dict
 from typing import Tuple
 from typing import TypeVar
 
+
 _T = TypeVar("_T")
+
+
+def second(_: Any, x: _T) -> _T:  # noqa: U101
+    return x
+
+
+# sentinel
 
 
 class Sentinel:
@@ -15,17 +24,14 @@ class Sentinel:
     __str__ = __repr__
 
 
-# sentinel
 sentinel = Sentinel()
 
 
-def is_not_sentinel(x: Any) -> bool:
-    return x is not sentinel
-
-
-def second_is_not_sentinel(pair: Tuple[Any, _T]) -> _T:
-    _, x = pair
-    return is_not_sentinel(x)
+def drop_sentinel(*args: Any, **kwargs: Any) -> Tuple[Tuple, Dict[str, Any]]:
+    return (
+        tuple(x for x in args if x is not sentinel),
+        {k: v for k, v in kwargs.items() if v is not sentinel},
+    )
 
 
 # version
@@ -48,4 +54,4 @@ def _get_version() -> Version:
         raise RuntimeError(f"Expected Python 3.6-3.8; got 3.{minor}") from None
 
 
-_VERSION = _get_version()
+VERSION = _get_version()
