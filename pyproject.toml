@@ -20,5 +20,5 @@ keywords = "functional itertools"
 license = "MIT"
 
 [tool.flit.metadata.requires-extra]
-test = ["hypothesis", "pytest", "pytest-cov", "pytest-randomly"]
-dev = ["pre-commit", "pytest-xdist"]
+test = ["hypothesis", "pytest", "pytest-cov", "pytest-randomly", "pytest-xdist"]
+dev = ["bump2version", "pre-commit"]
