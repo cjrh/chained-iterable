@@ -6,7 +6,7 @@ from typing import Dict
 from typing import Tuple
 from typing import TypeVar
 
-from functional_itertools.errors import UnsupportVersionError
+from chained_iterable.errors import UnsupportVersionError
 
 
 _T = TypeVar("_T")

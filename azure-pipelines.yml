@@ -41,5 +41,5 @@ steps:
 
 - script: |
     pip install pytest pytest-azurepipelines
-    pytest tests/ --cov functional_itertools
+    pytest tests/ --cov chained_iterable
   displayName: 'pytest'

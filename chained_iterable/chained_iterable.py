@@ -60,15 +60,15 @@ from more_itertools.recipes import take
 from more_itertools.recipes import unique_everseen
 from more_itertools.recipes import unique_justseen
 
-from functional_itertools.errors import EmptyIterableError
-from functional_itertools.errors import MultipleElementsError
-from functional_itertools.errors import UnsupportVersionError
-from functional_itertools.utilities import drop_sentinel
-from functional_itertools.utilities import second
-from functional_itertools.utilities import Sentinel
-from functional_itertools.utilities import sentinel
-from functional_itertools.utilities import VERSION
-from functional_itertools.utilities import Version
+from chained_iterable.errors import EmptyIterableError
+from chained_iterable.errors import MultipleElementsError
+from chained_iterable.errors import UnsupportVersionError
+from chained_iterable.utilities import drop_sentinel
+from chained_iterable.utilities import second
+from chained_iterable.utilities import Sentinel
+from chained_iterable.utilities import sentinel
+from chained_iterable.utilities import VERSION
+from chained_iterable.utilities import Version
 
 
 _T = TypeVar("_T")

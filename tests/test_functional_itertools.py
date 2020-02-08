@@ -23,13 +23,13 @@ from hypothesis.strategies import tuples
 from pytest import mark
 from pytest import raises
 
-from functional_itertools import ChainedIterable
-from functional_itertools.errors import UnsupportVersionError
-from functional_itertools.utilities import drop_sentinel
-from functional_itertools.utilities import Sentinel
-from functional_itertools.utilities import sentinel
-from functional_itertools.utilities import VERSION
-from functional_itertools.utilities import Version
+from chained_iterable import ChainedIterable
+from chained_iterable.errors import UnsupportVersionError
+from chained_iterable.utilities import drop_sentinel
+from chained_iterable.utilities import Sentinel
+from chained_iterable.utilities import sentinel
+from chained_iterable.utilities import VERSION
+from chained_iterable.utilities import Version
 
 
 def _assert_same_type_and_equal(x: Any, y: Any) -> None:
