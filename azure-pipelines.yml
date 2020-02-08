@@ -4,7 +4,17 @@
 # https://docs.microsoft.com/azure/devops/pipelines/languages/python
 
 trigger:
-- master
+  branches:
+    include: [master]
+  tags:
+    include: ['*']
+
+schedules:
+- cron: "0 0 * * *"
+  displayName: Daily midnight build
+  branches:
+    include:
+    - master
 
 pool:
   vmImage: 'ubuntu-latest'
@@ -31,5 +41,5 @@ steps:
 
 - script: |
     pip install pytest pytest-azurepipelines
-    pytest -v --cov=submark --cov-report=term --cov-report=term
+    pytest tests/ --cov functional_itertools
   displayName: 'pytest'
