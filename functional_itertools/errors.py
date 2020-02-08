@@ -1,3 +1,7 @@
+class UnsupportVersionError(RuntimeError):
+    """Raised when the version of Python is unsupported."""
+
+
 class EmptyIterableError(ValueError):
     """Raised when an Iterable is unexpectedly empty."""
 

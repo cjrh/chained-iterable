@@ -6,6 +6,8 @@ from typing import Dict
 from typing import Tuple
 from typing import TypeVar
 
+from functional_itertools.errors import UnsupportVersionError
+
 
 _T = TypeVar("_T")
 
@@ -19,7 +21,7 @@ def second(_: Any, x: _T) -> _T:  # noqa: U101
 
 class Sentinel:
     def __repr__(self) -> str:
-        return "Sentinel"
+        return "<sentinel>"
 
     __str__ = __repr__
 
@@ -51,7 +53,9 @@ def _get_version() -> Version:
     try:
         return mapping[minor]
     except KeyError:
-        raise RuntimeError(f"Expected Python 3.6-3.8; got 3.{minor}") from None
+        raise UnsupportVersionError(
+            f"Expected Python 3.6-3.8; got 3.{minor}",
+        ) from None
 
 
 VERSION = _get_version()

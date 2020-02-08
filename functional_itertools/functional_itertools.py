@@ -62,6 +62,7 @@ from more_itertools.recipes import unique_justseen
 
 from functional_itertools.errors import EmptyIterableError
 from functional_itertools.errors import MultipleElementsError
+from functional_itertools.errors import UnsupportVersionError
 from functional_itertools.utilities import drop_sentinel
 from functional_itertools.utilities import second
 from functional_itertools.utilities import Sentinel
@@ -82,23 +83,8 @@ if VERSION in {Version.py36, Version.py37}:
     ) -> "ChainedIterable[_T]":
         return self.pipe(accumulate, func, index=0)
 
-    def _max(
-        self: "ChainedIterable[_T]",
-        *,
-        key: Callable[[_T], Any] = sentinel,
-        default: Union[_T, Sentinel] = sentinel,
-    ) -> _T:
-        _, kwargs = drop_sentinel(key=key, default=default)
-        return max(self._iterable, **kwargs)
-
-    def _min(
-        self: "ChainedIterable[_T]",
-        *,
-        key: Callable[[_T], Any] = sentinel,
-        default: Union[_T, Sentinel] = sentinel,
-    ) -> _T:
-        _, kwargs = drop_sentinel(key=key, default=default)
-        return min(self._iterable, **kwargs)
+    _max_min_key_annotation = Union[Callable[[_T], Any], Sentinel]
+    _max_min_key_default = sentinel
 
 
 elif VERSION is Version.py38:
@@ -110,27 +96,12 @@ elif VERSION is Version.py38:
     ) -> "ChainedIterable[_T]":
         return self.pipe(accumulate, func, initial=initial, index=0)
 
-    def _max(
-        self: "ChainedIterable[_T]",
-        *,
-        key: Optional[Callable[[_T], Any]] = None,
-        default: Union[_T, Sentinel] = sentinel,
-    ) -> _T:
-        _, kwargs = drop_sentinel(default=default)
-        return max(self._iterable, key=key, **kwargs)
-
-    def _min(
-        self: "ChainedIterable[_T]",
-        *,
-        key: Optional[Callable[[_T], Any]] = None,
-        default: Union[_T, Sentinel] = sentinel,
-    ) -> _T:
-        _, kwargs = drop_sentinel(default=default)
-        return min(self._iterable, key=key, **kwargs)
+    _max_min_key_annotation = Optional[Callable[[_T], Any]]
+    _max_min_key_default = None
 
 
 else:
-    raise NotImplementedError(f"Expected a supported version; got {VERSION}")
+    raise UnsupportVersionError(VERSION)
 
 
 class ChainedIterable(Iterable[_T]):
@@ -214,18 +185,33 @@ class ChainedIterable(Iterable[_T]):
     ) -> "ChainedIterable[_U]":
         return self.pipe(map, func, *iterables, index=1)
 
-    max = _max
-    min = _min
+    def max(
+        self,
+        *,
+        key: _max_min_key_annotation = _max_min_key_default,
+        default: Union[_T, Sentinel] = sentinel,
+    ) -> _T:
+        _, kwargs = drop_sentinel(key=key, default=default)
+        return max(self._iterable, **kwargs)
+
+    def min(
+        self,
+        *,
+        key: _max_min_key_annotation = _max_min_key_default,
+        default: Union[_T, Sentinel] = sentinel,
+    ) -> _T:
+        _, kwargs = drop_sentinel(key=key, default=default)
+        return min(self._iterable, **kwargs)
 
     @classmethod
     def range(
         cls,
-        start_or_stop: int,
+        start: int,
         stop: Union[int, Sentinel] = sentinel,
         step: Union[int, Sentinel] = sentinel,
     ) -> "ChainedIterable[int]":
         args, _ = drop_sentinel(stop, step)
-        return cls(range(start_or_stop, *args))
+        return cls(range(start, *args))
 
     def reversed(self) -> "ChainedIterable[_T]":
         return self.pipe(reversed, index=0)
@@ -242,7 +228,7 @@ class ChainedIterable(Iterable[_T]):
         return sorted(self._iterable, key=key, reverse=reverse)
 
     def sum(self, start: Union[_T, Sentinel] = sentinel) -> _T:
-        args, _ = self._drop_sentinel(start)
+        args, _ = drop_sentinel(start)
         return sum(self._iterable, *args)
 
     def tuple(self) -> Tuple[_T, ...]:
@@ -352,12 +338,12 @@ class ChainedIterable(Iterable[_T]):
 
     def islice(
         self,
-        start_or_step: int,
+        start: int,
         stop: Union[int, Sentinel] = sentinel,
         step: Union[int, Sentinel] = sentinel,
     ) -> "ChainedIterable[_T]":
         args, _ = drop_sentinel(stop, step)
-        return self.pipe(islice, start_or_step, *args, index=0)
+        return self.pipe(islice, start, *args, index=0)
 
     def starmap(self, func: Callable[[Tuple], _U]) -> "ChainedIterable[_U]":
         return self.pipe(starmap, func, index=1)
