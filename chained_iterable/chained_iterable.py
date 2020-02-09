@@ -18,6 +18,7 @@ from itertools import tee
 from itertools import zip_longest
 from operator import add
 from operator import itemgetter
+from sys import maxsize
 from typing import Any
 from typing import Callable
 from typing import Dict
@@ -101,7 +102,7 @@ elif VERSION is Version.py38:
 
 
 else:
-    raise UnsupportVersionError(VERSION)
+    raise UnsupportVersionError(VERSION)  # pragma: no cover
 
 
 class ChainedIterable(Iterable[_T]):
@@ -113,7 +114,7 @@ class ChainedIterable(Iterable[_T]):
         except TypeError as error:
             (msg,) = error.args
             raise TypeError(
-                f"{type(self).__name__} expected an itrable, but {msg}",
+                f"{type(self).__name__} expected an iterable, but {msg}",
             )
         else:
             self._iterable = iterable
@@ -128,11 +129,14 @@ class ChainedIterable(Iterable[_T]):
 
     def __getitem__(self, item: Union[int, slice]) -> _T:
         if isinstance(item, int):
-            try:
-                value = self.nth(item, default=sentinel)
-            except ValueError:
+            if item < 0:
                 raise IndexError(f"Expected a non-negative index; got {item}")
+            elif item > maxsize:
+                raise IndexError(
+                    f"Expected an index at most {maxsize}; got {item}",
+                )
             else:
+                value = self.nth(item, default=sentinel)
                 if value is sentinel:
                     raise IndexError(
                         f"{type(self).__name__} index out of range",

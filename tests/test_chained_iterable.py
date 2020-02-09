@@ -5,6 +5,7 @@ from operator import add
 from operator import mod
 from operator import sub
 from re import escape
+from sys import maxsize
 from typing import Any
 from typing import Callable
 from typing import Dict
@@ -80,6 +81,66 @@ def _int_and_int_to_int_funcs(draw: Any) -> Callable[[int, int], int]:
     func_1, func_2 = draw(tuples(_int_to_int_funcs(), _int_to_int_funcs()))
     combiner = draw(sampled_from([add, sub]))
     return lambda x, y: combiner(func_1(x), func_2(y))
+
+
+# core
+
+
+@given(input_=integers() | lists(integers()))
+def test_init(input_: Union[int, List[int]]) -> None:
+    if isinstance(input_, int):
+        with raises(
+            TypeError,
+            match="ChainedIterable expected an iterable, "
+            "but 'int' object is not iterable",
+        ):
+            ChainedIterable(input_)
+    else:
+        assert isinstance(ChainedIterable(iter(input_)), ChainedIterable)
+
+
+@given(ints=lists(integers()), other=integers() | lists(integers()))
+def test_eq(ints: List[int], other: Union[int, List[int]]) -> None:
+    _assert_same_type_and_equal(
+        ChainedIterable(iter(ints)) == other, ints == other,
+    )
+
+
+@given(ints=lists(integers()), index=integers())
+def test_get_item(ints: List[int], index: int) -> None:
+    iterable = ChainedIterable(iter(ints))
+    num_ints = len(ints)
+    if index < 0:
+        with raises(
+            IndexError, match=f"Expected a non-negative index; got {index}",
+        ):
+            iterable[index]
+    elif 0 <= index < num_ints:
+        _assert_same_type_and_equal(iterable[index], ints[index])
+    elif num_ints <= index <= maxsize:
+        with raises(IndexError, match="ChainedIterable index out of range"):
+            iterable[index]
+    else:
+        with raises(
+            IndexError,
+            match=f"Expected an index at most {maxsize}; got {index}",
+        ):
+            iterable[index]
+
+
+@given(ints=lists(integers()))
+def test_iter(ints: List[int]) -> None:
+    assert list(ChainedIterable(iter(ints))) == ints
+
+
+@given(ints=lists(integers()))
+def test_repr(ints: List[int]) -> None:
+    assert repr(ChainedIterable(ints)) == f"ChainedIterable({ints!r})"
+
+
+@given(ints=lists(integers()))
+def test_str(ints: List[int]) -> None:
+    assert str(ChainedIterable(ints)) == f"ChainedIterable({ints})"
 
 
 # built-ins

@@ -48,11 +48,13 @@ class Version(Enum):
 def _get_version() -> Version:
     major, minor, *_ = version_info
     if major != 3:
-        raise RuntimeError(f"Expected Python 3; got {major}")
+        raise RuntimeError(
+            f"Expected Python 3; got {major}",
+        )  # pragma: no cover
     mapping = {6: Version.py36, 7: Version.py37, 8: Version.py38}
     try:
         return mapping[minor]
-    except KeyError:
+    except KeyError:  # pragma: no cover
         raise UnsupportVersionError(
             f"Expected Python 3.6-3.8; got 3.{minor}",
         ) from None
