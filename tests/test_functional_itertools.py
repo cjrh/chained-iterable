@@ -1,3 +1,5 @@
+from itertools import count
+from itertools import islice
 from operator import mod
 from re import escape
 from typing import Any
@@ -64,6 +66,9 @@ def _int_to_int_funcs(draw: Any) -> Callable[[int], int]:
 @composite
 def _int_to_any_funcs(draw: Any) -> Callable[[int], Any]:
     return draw(_int_to_bool_funcs() | _int_to_int_funcs())
+
+
+# built-ins
 
 
 @given(bools=lists(booleans()))
@@ -200,3 +205,15 @@ def test_zip(ints: List[int], iterables: List[List[int]]) -> None:
     iterable = ChainedIterable(ints).zip(*iterables)
     assert isinstance(iterable, ChainedIterable)
     assert iterable == zip(ints, *iterables)
+
+
+# itertools
+
+
+@given(
+    start=integers(), step=integers(), length=integers(0, 1000),
+)
+def test_count(start: int, step: int, length: int) -> None:
+    iterable = ChainedIterable.count(start=start, step=step)
+    assert isinstance(iterable, ChainedIterable)
+    assert iterable[:length] == islice(count(start=start, step=step), length)

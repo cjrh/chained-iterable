@@ -4,5 +4,5 @@ from chained_iterable.errors import EmptyIterableError
 from chained_iterable.errors import MultipleElementsError
 
 
-__version__ = "0.4.3"
+__version__ = "0.4.4"
 _ = {EmptyIterableError, MultipleElementsError, ChainedIterable}
