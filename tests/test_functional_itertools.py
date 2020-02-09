@@ -1,6 +1,9 @@
+from functools import reduce
 from itertools import count
 from itertools import islice
+from operator import add
 from operator import mod
+from operator import sub
 from re import escape
 from typing import Any
 from typing import Callable
@@ -21,11 +24,15 @@ from hypothesis.strategies import fixed_dictionaries
 from hypothesis.strategies import integers
 from hypothesis.strategies import just
 from hypothesis.strategies import lists
+from hypothesis.strategies import sampled_from
 from hypothesis.strategies import tuples
+from more_itertools import chunked
 from pytest import mark
 from pytest import raises
 
 from chained_iterable import ChainedIterable
+from chained_iterable import EmptyIterableError
+from chained_iterable import MultipleElementsError
 from chained_iterable.errors import UnsupportVersionError
 from chained_iterable.utilities import drop_sentinel
 from chained_iterable.utilities import Sentinel
@@ -68,17 +75,24 @@ def _int_to_any_funcs(draw: Any) -> Callable[[int], Any]:
     return draw(_int_to_bool_funcs() | _int_to_int_funcs())
 
 
+@composite
+def _int_and_int_to_int_funcs(draw: Any) -> Callable[[int, int], int]:
+    func_1, func_2 = draw(tuples(_int_to_int_funcs(), _int_to_int_funcs()))
+    combiner = draw(sampled_from([add, sub]))
+    return lambda x, y: combiner(func_1(x), func_2(y))
+
+
 # built-ins
 
 
 @given(bools=lists(booleans()))
 def test_any(bools: List[bool]) -> None:
-    _assert_same_type_and_equal(ChainedIterable(bools).any(), any(bools))
+    _assert_same_type_and_equal(ChainedIterable(iter(bools)).any(), any(bools))
 
 
 @given(bools=lists(booleans()))
 def test_all(bools: List[bool]) -> None:
-    _assert_same_type_and_equal(ChainedIterable(bools).all(), all(bools))
+    _assert_same_type_and_equal(ChainedIterable(iter(bools)).all(), all(bools))
 
 
 @given(mapping=dictionaries(integers(), integers()))
@@ -90,14 +104,14 @@ def test_dict(mapping: Dict[int, int]) -> None:
 
 @given(ints=lists(integers()), start=integers())
 def test_enumerate(ints: List[int], start: int) -> None:
-    iterable = ChainedIterable(ints).enumerate(start=start)
+    iterable = ChainedIterable(iter(ints)).enumerate(start=start)
     assert isinstance(iterable, ChainedIterable)
     assert iterable == enumerate(ints, start=start)
 
 
 @given(ints=lists(integers()), func=_int_to_bool_funcs())
 def test_filter(ints: List[int], func: Callable[[int], bool]) -> None:
-    iterable = ChainedIterable(ints).filter(func)
+    iterable = ChainedIterable(iter(ints)).filter(func)
     assert isinstance(iterable, ChainedIterable)
     assert iterable == filter(func, ints)
 
@@ -108,13 +122,13 @@ def test_frozenset_and_list_and_set_and_tuple(
     ints: List[int], func: Callable[[Iterable[int]], Iterable[int]],
 ) -> None:
     _assert_same_type_and_equal(
-        getattr(ChainedIterable(ints), func.__name__)(), func(ints),
+        getattr(ChainedIterable(iter(ints)), func.__name__)(), func(ints),
     )
 
 
 @given(ints=lists(integers()), func=_int_to_int_funcs())
 def test_map(ints: List[int], func: Callable[[int], int]) -> None:
-    iterable = ChainedIterable(ints).map(func)
+    iterable = ChainedIterable(iter(ints)).map(func)
     assert isinstance(iterable, ChainedIterable)
     assert iterable == map(func, ints)
 
@@ -131,11 +145,10 @@ def test_max_and_min(
     func: Callable[..., int],
     default_kwargs: Dict[str, int],
 ) -> None:
-    method = getattr(ChainedIterable(ints), func.__name__)
+    method = getattr(ChainedIterable(iter(ints)), func.__name__)
     key_kwargs_strategies = just({}) | fixed_dictionaries(
         {"key": _int_to_any_funcs()},
     )
-
     if VERSION in {Version.py36, Version.py37}:
         key_kwargs = data.draw(key_kwargs_strategies)
     elif VERSION is Version.py38:
@@ -184,7 +197,7 @@ def test_sorted(
     ints: List[int], key: Optional[Callable[[int], Any]], reverse: bool,
 ) -> None:
     _assert_same_type_and_equal(
-        ChainedIterable(ints).sorted(key=key, reverse=reverse),
+        ChainedIterable(iter(ints)).sorted(key=key, reverse=reverse),
         sorted(ints, key=key, reverse=reverse),
     )
 
@@ -194,7 +207,7 @@ def test_sorted(
 )
 def test_sum(ints: List[int], args: Tuple[str, ...]) -> None:
     _assert_same_type_and_equal(
-        ChainedIterable(ints).sum(*args), sum(ints, *args),
+        ChainedIterable(iter(ints)).sum(*args), sum(ints, *args),
     )
 
 
@@ -202,9 +215,90 @@ def test_sum(ints: List[int], args: Tuple[str, ...]) -> None:
     ints=lists(integers()), iterables=lists(lists(integers())),
 )
 def test_zip(ints: List[int], iterables: List[List[int]]) -> None:
-    iterable = ChainedIterable(ints).zip(*iterables)
+    iterable = ChainedIterable(iter(ints)).zip(*iterables)
     assert isinstance(iterable, ChainedIterable)
     assert iterable == zip(ints, *iterables)
+
+
+# public
+
+
+@given(ints=lists(integers()))
+def test_cache(ints: List[int]) -> None:
+    iterable = ChainedIterable(iter(ints)).cache()
+    assert isinstance(iterable, ChainedIterable)
+    assert iterable == ints
+
+
+@given(ints=lists(integers()))
+@mark.parametrize("method_name, index", [("first", 0), ("last", -1)])
+def test_first_and_last(ints: List[int], method_name: str, index: int) -> None:
+    method = getattr(ChainedIterable(iter(ints)), method_name)
+    if ints:
+        assert method() == ints[index]
+    else:
+        with raises(EmptyIterableError):
+            method()
+
+
+@given(ints=lists(integers()))
+def test_len(ints: List[int]) -> None:
+    _assert_same_type_and_equal(ChainedIterable(iter(ints)).len(), len(ints))
+
+
+@given(ints=lists(integers()))
+def test_one(ints: List[int]) -> None:
+    iterable = ChainedIterable(iter(ints))
+    num_ints = len(ints)
+    if num_ints == 0:
+        with raises(EmptyIterableError):
+            iterable.one()
+    elif num_ints == 1:
+        assert iterable.one() == ints[0]
+    else:
+        with raises(MultipleElementsError, match=f"{ints[0]}, {ints[1]}"):
+            iterable.one()
+
+
+@given(ints=lists(integers()), n=integers(0, 1000))
+def test_pipe(ints: List[int], n: int) -> None:
+    iterable = ChainedIterable(iter(ints)).pipe(chunked, n)
+    assert isinstance(iterable, ChainedIterable)
+    assert iterable == chunked(ints, n)
+
+
+@given(iterables=lists(lists(integers())))
+def test_unzip(iterables: List[List[int]]) -> None:
+    iterable = ChainedIterable(iterables).unzip()
+    assert isinstance(iterable, ChainedIterable)
+    assert iterable == zip(*iterables)
+
+
+# functools
+
+
+@given(
+    ints=lists(integers()),
+    func=_int_and_int_to_int_funcs(),
+    initial_args=just(()) | tuples(integers()),
+)
+def test_reduce(
+    ints: List[int],
+    func: Callable[[int, int], int],
+    initial_args: Tuple[int, ...],
+) -> None:
+    try:
+        res = ChainedIterable(iter(ints)).reduce(func, *initial_args)
+    except EmptyIterableError:
+        with raises(
+            TypeError,
+            match=escape(f"reduce() of empty sequence with no initial value"),
+        ):
+            reduce(func, ints, *initial_args)
+    else:
+        _assert_same_type_and_equal(
+            res, reduce(func, ints, *initial_args),
+        )
 
 
 # itertools

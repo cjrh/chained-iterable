@@ -243,13 +243,20 @@ class ChainedIterable(Iterable[_T]):
         return self.pipe(list, index=0)
 
     def first(self) -> _T:
-        return self[0]
+        try:
+            return next(iter(self._iterable))
+        except StopIteration:
+            raise EmptyIterableError from None
 
     def last(self) -> _T:
         return self.reduce(second)
 
     def len(self) -> int:
-        return self.enumerate(start=1).map(itemgetter(0)).last()
+        iterable = self.enumerate(start=1).map(itemgetter(0))
+        try:
+            return iterable.last()
+        except EmptyIterableError:
+            return 0
 
     def one(self) -> _T:
         head: List[_T] = self.islice(2).list()
