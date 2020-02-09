@@ -1,6 +1,7 @@
 # chained-iterable
-[![Build Status](https://dev.azure.com/baoweiur521/baoweiur521/_apis/build/status/baowei521.chained-iterable?branchName=master)](https://dev.azure.com/baoweiur521/baoweiur521/_build/latest?definitionId=2&branchName=master)
 [![PyPI version](https://badge.fury.io/py/chained_iterable.svg)](https://badge.fury.io/py/chained_iterable)
+[![Build Status](https://dev.azure.com/baoweiur521/baoweiur521/_apis/build/status/baowei521.chained-iterable?branchName=master)](https://dev.azure.com/baoweiur521/baoweiur521/_build/latest?definitionId=2&branchName=master)
+[![codecov](https://codecov.io/gh/baowei521/chained-iterable/branch/master/graph/badge.svg)](https://codecov.io/gh/baowei521/chained-iterable)
 
 ## Overview
 `chained_iterable` provides a single, light-weight object `ChainedIterable` that makes it easy to manipulate iterables in a functional-programming style. It:

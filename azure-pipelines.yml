@@ -43,3 +43,8 @@ steps:
     pip install pytest pytest-azurepipelines
     pytest tests/ --cov chained_iterable
   displayName: 'pytest'
+
+- script: |
+    pip install codecov
+    codecov --token=9b54efda-e8bd-4c3c-85b4-0698d2148368
+  displayName: 'coverage'
