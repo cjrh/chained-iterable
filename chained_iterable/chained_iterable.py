@@ -27,6 +27,7 @@ from typing import Iterable
 from typing import Iterator
 from typing import List
 from typing import Optional
+from typing import overload
 from typing import Set
 from typing import Tuple
 from typing import Type
@@ -72,6 +73,7 @@ from chained_iterable.utilities import VERSION
 from chained_iterable.utilities import Version
 
 
+_CI = TypeVar("_CI", bound="ChainedIterable[int]")
 _T = TypeVar("_T")
 _U = TypeVar("_U")
 _GroupByTU = Tuple[_U, Iterator[_T]]
@@ -90,7 +92,7 @@ if VERSION in {Version.py36, Version.py37}:
 
 elif VERSION is Version.py38:
 
-    def _accumulate(
+    def _accumulate(  # type: ignore
         self: "ChainedIterable[_T]",
         func: Callable[[_T, _T], _T] = add,
         initial: Optional[_T] = None,
@@ -127,7 +129,17 @@ class ChainedIterable(Iterable[_T]):
         else:
             return self.list() == list(other)
 
-    def __getitem__(self, item: Union[int, slice]) -> _T:
+    @overload
+    def __getitem__(self, item: int) -> _T:
+        item
+
+    @overload  # noqa: F811
+    def __getitem__(self, item: slice) -> "ChainedIterable[_T]":
+        item
+
+    def __getitem__(  # noqa: F811
+        self, item: Union[int, slice],
+    ) -> Union[_T, "ChainedIterable[_T]"]:
         if isinstance(item, int):
             if item < 0:
                 raise IndexError(f"Expected a non-negative index; got {item}")
@@ -136,13 +148,13 @@ class ChainedIterable(Iterable[_T]):
                     f"Expected an index at most {maxsize}; got {item}",
                 )
             else:
-                value = self.nth(item, default=sentinel)
-                if value is sentinel:
+                slice_ = islice(self._iterable, item, item + 1)
+                try:
+                    return next(slice_)
+                except StopIteration:
                     raise IndexError(
                         f"{type(self).__name__} index out of range",
                     )
-                else:
-                    return value
         elif isinstance(item, slice):
             return self.islice(item.start, item.stop, item.step)
         else:
@@ -209,7 +221,7 @@ class ChainedIterable(Iterable[_T]):
 
     @classmethod
     def range(
-        cls,
+        cls: Type[_CI],
         start: int,
         stop: Union[int, Sentinel] = sentinel,
         step: Union[int, Sentinel] = sentinel,
@@ -310,16 +322,16 @@ class ChainedIterable(Iterable[_T]):
     # itertools
 
     @classmethod
-    def count(cls, start: int = 0, step: int = 1) -> "ChainedIterable[int]":
+    def count(
+        cls: Type[_CI], start: int = 0, step: int = 1,
+    ) -> "ChainedIterable[int]":
         return cls(count(start=start, step=step))
 
     def cycle(self) -> "ChainedIterable[_T]":
         return self.pipe(cycle, index=0)
 
     @classmethod
-    def repeat(
-        cls, x: _T, times: Optional[int] = None,
-    ) -> "ChainedIterable[_T]":
+    def repeat(cls: Type[_CI], x: _T, times: int) -> "ChainedIterable[_T]":
         return cls(repeat(x, times=times))
 
     accumulate = _accumulate
@@ -395,7 +407,7 @@ class ChainedIterable(Iterable[_T]):
 
     @classmethod
     def tabulate(
-        cls, func: Callable[[int], _T], start: int = 0,
+        cls: Type[_CI], func: Callable[[int], _T], start: int = 0,
     ) -> "ChainedIterable[_T]":
         return cls(tabulate(func, start=start))
 
@@ -428,7 +440,10 @@ class ChainedIterable(Iterable[_T]):
 
     @classmethod
     def repeatfunc(
-        cls, func: Callable[..., _T], times: Optional[int] = None, *args: Any,
+        cls: Type[_CI],
+        func: Callable[..., _T],
+        times: Optional[int] = None,
+        *args: Any,
     ) -> "ChainedIterable[_T]":
         return cls(repeatfunc(func, times=times, *args))
 
@@ -463,7 +478,7 @@ class ChainedIterable(Iterable[_T]):
 
     @classmethod
     def iter_except(
-        cls,
+        cls: Type[_CI],
         func: Callable[..., _T],
         exception: Type[Exception],
         first: Optional[_T] = None,
@@ -473,7 +488,7 @@ class ChainedIterable(Iterable[_T]):
     def first_true(
         self,
         default: bool = False,
-        pred: Optional[Callable[[_T], bool]] = None,
+        pred: Optional[Callable[[_T], object]] = None,
     ) -> "ChainedIterable[_T]":
         return first_true(self._iterable, default=default, pred=pred)
 
